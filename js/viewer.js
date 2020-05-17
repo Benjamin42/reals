@@ -13,13 +13,9 @@ var files = {
 };
 
 $(document).ready( function () {
-
-	// Load data from sessionStorage if exists
-	if (typeof sessionStorage != 'undefined') {
-    	if ("data" in sessionStorage) {
-    		data = JSON.parse(sessionStorage.data);
-    	}
-    }
+	if (document.cookie) {
+		data = JSON.parse(document.cookie);
+	}
 
     drawListTable();
 
@@ -30,7 +26,6 @@ drawListTable = function() {
     // Draw lines in table
     var lines = "";
 	for (i in data) {
-		//$('#listTable > tbody:last-child').append(constructLine(i));
 		lines += constructLine(i);
 	}
 
@@ -90,6 +85,20 @@ constructTable = function(idName, lines) {
 	return strTable;
 }
 
+showHidePanel = function(elem) {
+	if ($("#listPanel").is(":visible")) {
+		$("#listPanel").hide();
+		$("#sheetPanel").removeClass("col-6");
+		$("#sheetPanel").addClass("col-11");
+		elem.text(">");
+	} else {
+		$("#listPanel").show();
+		$("#sheetPanel").removeClass("col-11");
+		$("#sheetPanel").addClass("col-6");
+		elem.text("<");
+	}
+}
+
 constructButton = function(id) {
 	if (data[id].bookmarked) {
 		return "<button class=\"btn btn-sm btn-outline-primary\" onclick='unBookMark(\"" + id + "\");'>Remove</button>";	
@@ -100,23 +109,53 @@ constructButton = function(id) {
 
 loadPage = function(id) {
 	var file = files[data[id].book];
-	$('#framePdf').prop("src", "./web/viewer.html?file=../" + file.path + "#page=" + (data[id].page + file.inc));
+	$('#framePdf').prop("src", "./web/viewer.html?file=../pdf/" + file.path + "#page=" + (data[id].page + file.inc));
 }
 
 addBookMark = function(id) {
-	if (typeof sessionStorage != 'undefined') {
-		data[id].bookmarked = true;
-		sessionStorage.data = JSON.stringify(data);
-		$("#bookmark_" + id).html(constructButton(id));
-		drawBookmarksTable();
-	}
+	data[id].bookmarked = true;
+	eraseCookie('bookmarks');
+	createCookie('bookmarks', JSON.stringify(data), null);
+	console.log(readCookie('bookmarks'));
+	$("#bookmark_" + id).html(constructButton(id));
+	drawBookmarksTable();
 }
 
 unBookMark = function(id) {
-	if (typeof sessionStorage != 'undefined') {
-		data[id].bookmarked = false;
-		sessionStorage.data = JSON.stringify(data);
-		$("#bookmark_" + id).html(constructButton(id));
-		drawBookmarksTable();
-	}
+	data[id].bookmarked = false;
+	eraseCookie('bookmarks');
+	createCookie('bookmarks', JSON.stringify(data), null);
+	$("#bookmark_" + id).html(constructButton(id));
+	drawBookmarksTable();
+}
+
+
+function createCookie(name, value, days) {
+    var expires;
+
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toGMTString();
+    } else {
+        expires = "";
+    }
+    document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value) + expires + "; path=/";
+}
+
+function readCookie(name) {
+    var nameEQ = encodeURIComponent(name) + "=";
+    var ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) === ' ')
+            c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0)
+            return decodeURIComponent(c.substring(nameEQ.length, c.length));
+    }
+    return null;
+}
+
+function eraseCookie(name) {
+    createCookie(name, "", -1);
 }
